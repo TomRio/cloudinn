@@ -236,63 +236,78 @@ fetch('nav.html')
 
 
 //display
+// Immediate log to confirm script is loaded
+console.log('script.js loaded');
+
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM fully loaded, script running');
+    console.log('DOM fully loaded');
 
-  // Find the tags-cloud element
-  const tagsCloud = document.querySelector('.tags-cloud');
-  if (!tagsCloud) {
-      console.error('Error: .tags-cloud element not found in the DOM');
-      return;
-  }
-  console.log('Found .tags-cloud element:', tagsCloud);
+    // Find debug div and tags-cloud
+    const debugDiv = document.querySelector('#debug');
+    const tagsCloud = document.querySelector('.tags-cloud');
 
-  // Fetch data from the API
-  fetch('http://localhost:1337/api/index?populate[display][populate]=label')
-      .then(response => {
-          console.log('Fetch response status:', response.status);
-          if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-      })
-      .then(data => {
-          console.log('Full API response:', data);
+    if (debugDiv) {
+        debugDiv.textContent = 'Loading tags...';
+        console.log('Debug div found');
+    } else {
+        console.warn('Debug div not found');
+    }
 
-          // Access the labels array
-          const labels = data?.data?.attributes?.display?.label;
-          if (!labels || !Array.isArray(labels)) {
-              console.error('Error: labels array not found or invalid in API response');
-              tagsCloud.innerHTML = '<li>No tags available</li>'; // Fallback message
-              return;
-          }
-          console.log('Labels array:', labels);
+    if (!tagsCloud) {
+        console.error('Error: .tags-cloud element not found');
+        if (debugDiv) debugDiv.textContent = 'Error: tags-cloud not found';
+        return;
+    }
+    console.log('Found .tags-cloud:', tagsCloud);
 
-          // Clear any existing content
-          tagsCloud.innerHTML = '';
-          console.log('Cleared tags-cloud content');
+    // Fetch API data
+    fetch('http://localhost:1337/api/index?populate[display][populate]=label')
+        .then(response => {
+            console.log('Fetch status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response:', data);
 
-          // Create <li> elements for each tag
-          labels.forEach((label, index) => {
-              if (!label.tag) {
-                  console.warn(`Warning: Missing tag for label at index ${index}`);
-                  return;
-              }
-              const li = document.createElement('li');
-              li.className = 'tag';
-              const span = document.createElement('span');
-              span.className = 'wrap';
-              span.textContent = label.tag;
-              li.appendChild(span);
-              tagsCloud.appendChild(li);
-              console.log(`Created and appended li for tag: ${label.tag}`);
-          });
+            // Access labels at data.display.label
+            const labels = data?.display?.label;
+            if (!labels || !Array.isArray(labels)) {
+                console.error('Error: labels array not found');
+                if (debugDiv) debugDiv.textContent = 'Error: No tags found';
+                tagsCloud.innerHTML = '<li>No tags available</li>';
+                return;
+            }
+            console.log('Labels:', labels);
+            if (debugDiv) debugDiv.textContent = `Found ${labels.length} tags`;
 
-          // Verify the final content
-          console.log('Final tags-cloud innerHTML:', tagsCloud.innerHTML);
-      })
-      .catch(error => {
-          console.error('Error fetching or processing tags:', error);
-          tagsCloud.innerHTML = '<li>Error loading tags</li>'; // Fallback message
-      });
+            // Clear tags-cloud
+            tagsCloud.innerHTML = '';
+
+            // Add <li> elements
+            labels.forEach(label => {
+                if (!label.tag) {
+                    console.warn('Missing tag:', label);
+                    return;
+                }
+                const li = document.createElement('li');
+                li.className = 'tag';
+                const span = document.createElement('span');
+                span.className = 'wrap';
+                span.textContent = label.tag;
+                li.appendChild(span);
+                tagsCloud.appendChild(li);
+                console.log(`Added tag: ${label.tag}`);
+            });
+
+            console.log('Final tags-cloud content:', tagsCloud.innerHTML);
+            if (debugDiv) debugDiv.textContent = `Loaded ${labels.length} tags`;
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            if (debugDiv) debugDiv.textContent = 'Error loading tags';
+            tagsCloud.innerHTML = '<li>Error loading tags</li>';
+        });
 });
