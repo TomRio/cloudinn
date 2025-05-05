@@ -238,78 +238,29 @@ fetch('nav.html')
 
 
   
+  fetch("http://localhost:1337/api/index?populate[display][populate]=label")
+  .then(res => res.json())
+  .then(data => {
+    // Get the array of tag labels from nested structure
+    const labels = data.data.attributes.display.label;
 
-  // ==========================
-// GENERAL STRAPI API MODULE
-// ==========================
+    // Find the <ul> where we'll insert tags
+    const tagList = document.querySelector(".tags-cloud");
 
-const API_BASE = "http://localhost:1337/api";
+    // Clear any old content
+    tagList.innerHTML = "";
 
-/**
- * Fetch data from Strapi
- * @param {string} path - The API endpoint (e.g., 'index')
- * @param {object} populate - Optional populate query for nested components
- * @returns {Promise<object>} - The attributes of the content type
- */
-async function fetchStrapi(path, populate = {}) {
-  const url = new URL(`${API_BASE}/${path}`);
+    // Loop over each tag and add it to the list
+    labels.forEach(item => {
+      const li = document.createElement("li");
+      li.className = "tag";
 
-  // Add populate parameters for nested components
-  if (Object.keys(populate).length > 0) {
-    const qs = new URLSearchParams();
-    Object.entries(populate).forEach(([key, value]) => {
-      qs.set(`populate[${key}][populate]`, value === true ? '*' : value);
+      const span = document.createElement("span");
+      span.className = "wrap";
+      span.textContent = item.tag; // Set the tag text
+
+      li.appendChild(span);
+      tagList.appendChild(li);
     });
-    url.search = qs.toString();
-  }
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Failed to fetch ${path}: ${response.statusText}`);
-
-  const json = await response.json();
-  return json.data.attributes;
-}
-
-
-// ==========================
-// INDEX PAGE SCRIPT
-// ==========================
-
-/**
- * Render the tag cloud from the label array
- * @param {Array} labels - Array of { tag: string }
- */
-function renderTags(labels) {
-  const tagsCloud = document.querySelector('.tags-cloud');
-  tagsCloud.innerHTML = ''; // Clear any existing tags
-
-  labels.forEach(({ tag }) => {
-    const li = document.createElement('li');
-    li.className = 'tag';
-
-    const span = document.createElement('span');
-    span.className = 'wrap';
-    span.textContent = tag;
-
-    li.appendChild(span);
-    tagsCloud.appendChild(li);
-  });
-}
-
-/**
- * Load and render the index page content from Strapi
- */
-async function loadIndexPage() {
-  try {
-    const data = await fetchStrapi("index", {
-      display: true // Populate 'display' component only
-    });
-
-    renderTags(data.display.label); // Render label data into .tags-cloud
-  } catch (error) {
-    console.error("Error loading index page:", error);
-  }
-}
-
-// Run on page load
-loadIndexPage();
+  })
+  .catch(err => console.error("Error loading tags:", err));
