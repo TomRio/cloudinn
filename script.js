@@ -260,26 +260,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     console.log('Found .tags-cloud:', tagsCloud);
 
+    // API URL - Replace with deployed Strapi URL for GitHub Pages
+    const apiUrl = 'http://localhost:1337/api/index?populate[display][populate]=label'; // Update to https://your-strapi-api.com/...
+
+    console.log('Fetching from:', apiUrl);
+
     // Fetch API data
-    fetch('http://localhost:1337/api/index?populate[display][populate]=label')
+    fetch(apiUrl)
         .then(response => {
-            console.log('Fetch status:', response.status);
+            console.log('Fetch status:', response.status, 'URL:', response.url);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('API response:', data);
+            console.log('API response:', JSON.stringify(data, null, 2));
 
             // Access labels at data.display.label
             const labels = data?.display?.label;
             if (!labels || !Array.isArray(labels)) {
-                console.error('Error: labels array not found');
+                console.error('Error: labels array not found at data.display.label');
+                console.log('Full data structure:', JSON.stringify(data, null, 2));
                 if (debugDiv) debugDiv.textContent = 'Error: No tags found';
                 tagsCloud.innerHTML = '<li>No tags available</li>';
                 return;
             }
+
             console.log('Labels:', labels);
             if (debugDiv) debugDiv.textContent = `Found ${labels.length} tags`;
 
@@ -307,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error('Fetch error:', error);
-            if (debugDiv) debugDiv.textContent = 'Error loading tags';
+            if (debugDiv) debugDiv.textContent = 'Error loading tags (check CORS or API URL)';
             tagsCloud.innerHTML = '<li>Error loading tags</li>';
         });
 });
