@@ -238,29 +238,54 @@ fetch('nav.html')
 
 
   
-  fetch("http://localhost:1337/api/index?populate[display][populate]=label")
-  .then(res => res.json())
-  .then(data => {
-    // Get the array of tag labels from nested structure
-    const labels = data.data.attributes.display.label;
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM fully loaded, script running');
 
-    // Find the <ul> where we'll insert tags
-    const tagList = document.querySelector(".tags-cloud");
+    const tagsCloud = document.querySelector('.tags-cloud');
+    if (!tagsCloud) {
+        console.error('Error: .tags-cloud element not found in the DOM');
+        return;
+    }
+    console.log('Found .tags-cloud element:', tagsCloud);
 
-    // Clear any old content
-    tagList.innerHTML = "";
+    fetch('http://localhost:1337/api/index?populate[display][populate]=lable')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response:', data);
 
-    // Loop over each tag and add it to the list
-    labels.forEach(item => {
-      const li = document.createElement("li");
-      li.className = "tag";
+            // Extract the lable array from the display component
+            const labels = data?.data?.attributes?.display?.lable;
+            if (!labels || !Array.isArray(labels)) {
+                console.error('Error: labels array not found or invalid in API response');
+                return;
+            }
+            console.log('Labels found:', labels);
 
-      const span = document.createElement("span");
-      span.className = "wrap";
-      span.textContent = item.tag; // Set the tag text
+            // Clear existing content in tagsCloud (in case of re-runs)
+            tagsCloud.innerHTML = '';
 
-      li.appendChild(span);
-      tagList.appendChild(li);
-    });
-  })
-  .catch(err => console.error("Error loading tags:", err));
+            // Iterate over each label to create <li> elements
+            labels.forEach((label, index) => {
+                if (!label.tag) {
+                    console.warn(`Warning: Missing tag for label at index ${index}`);
+                    return;
+                }
+                const li = document.createElement('li');
+                li.className = 'tag';
+                const span = document.createElement('span');
+                span.className = 'wrap';
+                span.textContent = label.tag;
+                li.appendChild(span);
+                tagsCloud.appendChild(li);
+                console.log(`Added tag: ${label.tag}`);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching or processing tags:', error);
+        });
+});
